@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+ 
+<head th:replace="fragments :: page_head('PetTaming-Main')">	
+		<meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>Create and Start Pet Taming</title>
+        <link th:href="@{https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css}" rel="stylesheet" />
+        <link th:href="@{https://fonts.googleapis.com/css?family=Merriweather+Sans:400,700}" rel="stylesheet" />
+        <link th:href="@{https://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic}" rel="stylesheet" type="text/css" />
+        <link th:href="@{https://cdnjs.cloudflare.com/ajax/libs/SimpleLightbox/2.1.0/simpleLightbox.min.css}" rel="stylesheet" />	
+	    <link th:href="@{/css/style.css}" rel="stylesheet" />        
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+        <link rel="stylesheet" type="text/css" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
+        <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
+        <script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+</head>
+
+	<body>
+		
+	 <div th:replace="navigation :: menu"></div>
+		<header class="mastheader">
+            <div class="container position-relative">
+                <div class="row justify-content-center">
+                    <div class="col-xl-6">
+                        <div class="text-center text-white">
+                            <!-- Page heading-->
+                            <h1 class="mb-5">검색 기능도 사용해보세요!</h1>
+                            <form class="form-subscribe" id="contactForm" data-sb-form-api-token="API_TOKEN">
+                                <div class="row">
+                                    <div class="col">
+                                        <input class="form-control form-control-lg" type="text" placeholder="Search Text" data-sb-validations="required,email" />
+                                    </div>
+                                    <div class="col-auto"><button class="btn btn-primary btn-lg enabled" id="submitButton" type="submit">Search</button></div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <div style="display: flex; justify-content: center;">
+		  	<div id = "Petbigvid">
+				<div style="position:absolute; z-index: 1;">
+					<table>
+						<tr th:each="action : ${Animals.animalAction.x_axis_line}">
+							<div th:each="actionLine : ${action.x_axis}"
+							th:switch="${actionLine}">
+							
+								<td th:case="color_1"
+								th:class="${Animals.color_1}+_box"
+								style="height: 20px; width: 20px; "></td>
+								
+								<td th:case="color_2"
+								th:class="${Animals.color_2}+_box"
+								style="height: 20px; width: 20px;"></td>
+								
+								<td th:case="color_border"
+								th:class="${Animals.color_border}+_box"
+								style="height: 20px; width: 20px;"></td>
+								
+								<td th:case="*"
+								th:class="${actionLine}+_box"
+								style="height: 20px; width: 20px;"></td>
+							</div>
+						  </tr>
+				  	</table>
+				</div>
+					
+			  	<div style="position:absolute; z-index: 2;">
+					<table class="animal_action">
+					  	<tr th:each="action : ${Animals.animalMoveAction.x_axis_line}">
+							<div th:each="actionLine : ${action.x_axis}"
+							th:switch="${actionLine}">
+							
+								<td th:case="color_1"
+								th:class="${Animals.color_1}+_box"
+								style="height: 20px; width: 20px; "></td>
+								
+								<td th:case="color_2"
+								th:class="${Animals.color_2}+_box"
+								style="height: 20px; width: 20px;"></td>
+								
+								<td th:case="color_border"
+								th:class="${Animals.color_border}+_box"
+								style="height: 20px; width: 20px;"></td>
+								
+								<td th:case="*"
+								th:class="${actionLine}+_box"
+								style="height: 20px; width: 20px;"></td>
+							</div>
+					  	</tr>
+			  		</table>
+				</div>
+			</div>
+			
+			<div style="float: left; padding: 10px; margin: 10px;">
+				  <p class = "ViewAnimalText">이름 : [[${Animals.animal_name}]]</p>
+				  <p class = "ViewAnimalText">주인 : [[${Animals.user_id.username}]]</p> 		
+				  		
+	              <th:block th:each="num : ${#numbers.sequence(1,Animals.animal_liking)}">
+				  ♥
+			 	  </th:block>
+			 	  
+	              <div th:if="${#authorization.expression('hasRole(''ROLE_' + Animals.user_id.user_id + ''')')}"><button id = "frbtn"><a
+	              th:href="@{'/MainPage/User/DeleteFriend/' + ${Animals.user_id.user_id} + '/' + ${Animals.user_id.user_id}}">
+	              친구 삭제
+	              </a></button></div>
+	              
+	              <div th:unless="${#authorization.expression('hasRole(''ROLE_' + Animals.user_id.user_id + ''')')}"><button id = "frbtn"><a 
+	              th:href="@{'/MainPage/User/AddFriend/' + ${Animals.user_id.user_id} + '/' + ${Animals.user_id.user_id}}">
+	              친구 추가
+	              </a></button></div>
+	              
+	              <button class = "taming"
+	              th:if="${Animals.user_id.user_id == user.user_id || #authorization.expression('hasRole(''ROLE_' + Animals.user_id.user_id + ''')')}"
+	              th:onclick="|location.href='/PetTaming/MainPage/ViweAnimal/${Animals.list_id}/${Animals.animal_status}/4'|">
+	                 밥먹이기
+	              </button>
+	              <br>
+	              
+	              <button class = "taming"
+	              th:if="${Animals.user_id.user_id == user.user_id || #authorization.expression('hasRole(''ROLE_' + Animals.user_id.user_id + ''')')}"
+	              th:onclick="|location.href='/PetTaming/MainPage/ViweAnimal/${Animals.list_id}/${Animals.animal_status}/7'|">
+	                 놀아주기
+	              </button>
+	              <br>
+	              
+	              <button class = "taming"
+	              th:if="${Animals.user_id.user_id == user.user_id || #authorization.expression('hasRole(''ROLE_' + Animals.user_id.user_id + ''')')}"
+	              th:onclick="|location.href='/PetTaming/MainPage/ViweAnimal/${Animals.list_id}/${Animals.animal_status}/8'|">
+	                 간식주기
+	              </button>
+	              <br>
+	              
+	              <button class = "taming"
+	              th:if="${Animals.user_id.user_id == user.user_id || #authorization.expression('hasRole(''ROLE_' + Animals.user_id.user_id + ''')')}"
+	              th:onclick="|location.href='/PetTaming/MainPage/ViweAnimal/${Animals.list_id}/${Animals.animal_status}/9'|">
+	                 빗겨주기
+	              </button>
+	              
+			 </div>
+        </div>
+        
+	  	<div th:replace="fragments :: footer"></div>
+	</body>
+</html>

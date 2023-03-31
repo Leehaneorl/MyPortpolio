@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head th:text-align = "center" th:replace="fragments :: page_head('PetTaming')">
+<script type = "text/javascript">	
+	$(document).ready(function(){
+	$("#buttonCancle").on("click",function(){
+		window.location = "[[@{/MainPage/home}]]";
+	}); 
+    rawPasswored = "[[${users.password}]]";
+		if(rawPasswored != null){
+	        $("#password").removeAttr("required");
+	        console.log(rawPasswored)
+	        console.log(rawPasswored != null)
+    }
+    
+    $("#fileImage").change(function(){
+		fileSize = this.files[0].size;
+			if(fileSize > 1048576){
+				this.setCustomValidity("1MB를 초과하는 파일은 업로드 할 수 없습니다.");
+				this.reportValidity();
+			}else{
+				this.setCustomValidity("");
+				showImageThumbnail(this);
+			}
+		});
+	});
+
+   function showImageThumbnail(fileInput){
+	   var file = fileInput.files[0];
+	   var reader = new FileReader();
+	   reader.onload = function(e){
+		   $("#thumbnail").attr("src", e.target.result);
+	   };	   
+	   reader.readAsDataURL(file);
+   }
+   
+   function checkDuplicateEmail(form){
+	   url = "[[@{/users/check_email}]]";
+	   
+	   userid = $("#user_id").val();
+	   userEmail = $("#email").val();
+	   csrfValue = $("input[name='_csrf']").val();
+	   params = {user_id: userid ,email : userEmail, _csrf : csrfValue};
+	   
+	   
+	   $.post(url, params, function(response){
+		   if(response == "OK"){
+			   form.submit();
+		   }else if(response == "Duplicated"){
+			   alert(userEmail + "가 이미 등록된 이메일입니다. 다시 입력해주세요.")
+		   }else{
+			   alert(userid + userEmail + "의 서버 연결에 실패하였습니다.")
+		   }
+	   }).fail(function(){
+		   alert("에러2" + "서버 연결에 실패하였습니다.")
+	   });
+	   return false;   
+	  }
+	  
+</script>
+
+    </head>
+   
+ <body id="page-top" bgcolor='gray'>
+	     <!-- Navigation-->
+	<form onsubmit = "return checkDuplicateEmail(this)"; th:action="@{'/MainPage/User/save/' + ${authority}}" method="POST" th:object="${users}"
+	   enctype = "multipart/form-data" style = "max-width: 700; margin:0 auto">		
+		<section class="page-section" id="contact">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-lg-8 col-xl-6 text-center">
+			            <h1>[[${pageTitle}]]</h1>
+                        <hr class="divider" />
+                    </div>
+                </div>
+		        <input type = "hidden" th:field = "*{user_id}"/>
+                <div class="row gx-4 gx-lg-5 justify-content-center mb-5">
+                    <div class="col-lg-6">
+						
+                            <div class="form-floating mb-3">
+                                <input class="form-control" id="name" th:field="*{username}" type="text" placeholder="Enter your name..." data-sb-validations="required" required/>
+                                <label for="name">User Name</label>
+                            </div>
+                            
+                            <!-- Email address input-->
+                            <div class="form-floating mb-3">
+                                <input class="form-control" id="email" type="email" th:field="*{email}" placeholder="name@example.com" data-sb-validations="required,email" required/>
+                                <label for="email">Email address</label>
+                            </div>
+                            
+                            <!-- >Password number input-->
+                            <div class="form-floating mb-3">
+                                <input th:if ="${users.user_id == null}"class="form-control" id="password" th:field="*{password}" type="password" data-sb-validations="required" required minlength="2" maxlength="10"/>
+                                <label for="message">Password</label>
+                                <div class="invalid-feedback" data-sb-feedback="phone:required">Password is required.</div>
+                                <input th:if ="${users.user_id != null}"class="form-control" id="password" th:field="*{password}" type="password" data-sb-validations="required" minlength="2" maxlength="10"/>
+                            </div>
+                            
+                            <!-- Message input-->
+                          <div class="form-group row">
+                               <label class="col-4 col-form-label">Photos: </label>
+	                             <div class="col-8">
+	                               <input type = "hidden" th:field = "*{photos}"/>
+	                               <input type="file" id = "fileImage" name = "image" accept = "image/png, image/jpeg" class = "mb-2"/>
+	                               <img id = "thumbnail" alt = "Photos preview" th:src = "@{${users.photosImagePath}}" class = "img-fluid"/>
+	                            </div>
+                           </div>
+                            <div class="d-grid" style="border: 1px solid white; float: left; width: 50%;">
+								<button th:if = "${users.user_id == null}" class="btn btn-primary btn-xl enabled" type="submit" value ="확인">회원 가입</button>
+								<button th:if = "${users.user_id != null}" class="btn btn-primary btn-xl enabled" type="submit" value ="수정">수정 완료</button>
+							</div>
+						    <div class="d-grid" style="border: 1px solid white; float: left; width: 50%;">
+								<button class="btn btn-primary btn-xl enabled" id="buttonCancle" type="button">취소</button>
+						   </div>
+                    </div>
+                 </div>            
+               </div>
+			</section>
+	     </form>
+   
+	  <div th:replace="fragments :: footer"></div>
+</body>
+</html>

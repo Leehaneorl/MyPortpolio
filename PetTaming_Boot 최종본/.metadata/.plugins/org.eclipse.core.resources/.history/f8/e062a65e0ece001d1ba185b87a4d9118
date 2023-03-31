@@ -1,0 +1,417 @@
+package com.pettaming.home;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.pettaming.animal.animalActionService;
+import com.pettaming.animal.animalTamingRepository;
+import com.pettaming.entity.Roles;
+import com.pettaming.entity.TamingAnimals;
+import com.pettaming.entity.User;
+import com.pettaming.post.CommentRepository;
+import com.pettaming.post.PostRepository;
+
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+
+import javax.transaction.Transactional;
+
+//홈페이지에서 사용될 기능을 모아둔 서비스
+@Service
+@Transactional
+public class homeService {
+
+	//user 테이블을 사용하기 위한 리포지토리
+	@Autowired
+	private userRepository userRepo;
+
+	//animalTaming 테이블을 사용하기 위한 리포지토리
+	@Autowired
+	private animalTamingRepository aniTamRepo;
+
+	//roles 테이블을 사용하기 위한 리포지토리
+	@Autowired
+	private rolesRepository rolRepo;
+
+	//패스워드를 암호화 하기위한 인코더
+	@Autowired
+	private PasswordEncoder passwordEncoder;
+	
+	//게시물 리파시토리
+	@Autowired
+	private PostRepository postRepo;
+	
+	//댓글 리파시토리
+	@Autowired
+	private CommentRepository commentRepo;
+	
+	//애니멀 액션 서비스의 매서드를 참고하기위한 클래스
+	@Autowired
+	private animalActionService aniActSer;
+	
+	//Animal 페이징 처리
+    public static final int TAMING_PER_PAGE = 4;
+	
+	//가독성과 유지보수성을 위해 상수를 사용 User 페이징 처리
+    public static final int USER_PER_PAGE = 10;
+   
+	//유저를 테이블에 저장하기 위한 메서드
+    public void save(User user) {
+	   
+	   boolean isUpdatingUser = (user.getUser_id() != null);
+	   if (isUpdatingUser) {
+		   User existingUser = userRepo.findById(user.getUser_id()).get();
+		   
+		   if (user.getPassword().isEmpty()) {
+			   user.setPassword(existingUser.getPassword());
+		   }else {
+			   encodePassword(user);
+		   }
+		   
+		   userRepo.save(user);
+	   }else {
+		   //패스워드를 암호화하기위한 매서드
+		   encodePassword(user);
+		   //유저를 우선 저장 후 
+		   //저장과 동시에 유저의 정보를 기반으로 권한 테이블에 유저 권한을 저장	
+		   userRepo.save(user);
+		   rolRepo.save(new Roles(userRepo.getUserByName(user.getEmail()).getUser_id(),"ROLE_USER"));
+	   }
+    }
+   
+	//패스워드를 암호화하기 위한 매서드
+	private void encodePassword(User user) {
+		
+		//패스워드 암호화
+		String encodedPassword = passwordEncoder.encode(user.getPassword());
+	   	//암호화된 패스워드를 유저에게 저장
+		user.setPassword(encodedPassword);
+	}
+	
+	 // 유저를 정보를 업데이트 하기 위해 id 값을 불러오는 메서드
+	 public Optional<User> get(Integer id) {
+
+		   return userRepo.findById(id);
+	 }
+	 
+    // 유저를 삭제하는 메서드
+	// 유저 삭제 시 유저의 펫과 Role, 게시물 그리고 친구 리스트 모두 지워지도록 설정
+	 public void deleteById(Integer id) {
+
+		   rolRepo.deleteByUserId(id);
+		   commentRepo.deleteByCommentId(id);
+		   rolRepo.deleteByUserId_Friend("ROLE_" + id);
+		   aniTamRepo.deleteByUserId(id);
+		   postRepo.deleteByUserId(id);
+		   userRepo.deleteById(id);
+	 }
+    // 유저를 선택하는 메서드
+	 public User findById(Integer id) {
+
+		   return userRepo.findById(id).get();
+	 }
+	 
+	public void saveRole(Integer user_id, Integer animalMaster_id) {
+			
+			rolRepo.save(new Roles(user_id,"ROLE_" + animalMaster_id));
+
+	}
+
+	public void deleteRole(Integer user_id, Integer animalMaster_id) {
+			
+		rolRepo.delete(user_id,"ROLE_" + animalMaster_id);
+			
+	}
+	
+	//동물을 저장하기 위한 매서드
+	public void animalsave(TamingAnimals newAnimal) {
+		aniTamRepo.save(newAnimal);
+	}
+	
+	//유저리포지토리에서 유저 이름으로 객체를 불러오는 매서드
+	public User findByUserName(String name) {
+		return userRepo.getUserByName(name);
+	}
+	
+	//TamingAnimals 테이블의 모든 정보를 불러오는 매서드
+	public List<TamingAnimals> animal_findAll() {
+		return (List<TamingAnimals>) aniTamRepo.findAll();
+	}
+	
+	//시간 지남에 따라 모든 동물의 상태를 업데이트 하는 메서드
+	public List<TamingAnimals> animal_update_findAll() {
+		
+		List<TamingAnimals> allAnimals = animal_findAll();
+		
+		for(TamingAnimals animal : allAnimals) {
+			animal_Status_Update(animal);
+		}
+		
+		return allAnimals;
+	}
+
+	//시간 지남에 따라 동물의 상태를 업데이트 하는 메서드
+		private void animal_Status_Update(TamingAnimals animal) {
+			
+			Random random = new Random();
+			
+			Timestamp lastTime = animal.getLast_Access_time();
+			Timestamp nowTime = new Timestamp(System.currentTimeMillis());
+			
+			int lastMinute = lastTime.getMinutes();
+			int nowMinute = nowTime.getMinutes();
+		
+			int lastHour = lastTime.getHours();
+			int nowHour = nowTime.getHours();
+
+			int lastDay = lastTime.getDay();
+			int nowDay = nowTime.getDay();
+
+			int lastMonth = lastTime.getMonth();
+			int nowMonth = nowTime.getMonth();
+
+			int lastYear = lastTime.getYear();
+			int nowYear = nowTime.getYear();
+			
+			/*
+			 * if((24 - lastHour) + nowHour > 24 && (lastDay != nowDay || lastMonth <
+			 * nowMonth || lastYear != nowYear )) {
+			 * 
+			 * int minuslike = 0; if(lastMonth > nowMonth) { int minusDay = 0; if(lastMonth
+			 * == 2) minusDay = 28; else if((lastMonth % 2 == 0 && lastMonth < 7) ||
+			 * (lastMonth % 2 == 1 && lastMonth > 8)) minusDay = 30; else if((lastMonth % 2
+			 * == 0 && lastMonth > 7) || (lastMonth % 2 == 1 && lastMonth < 8)) minusDay =
+			 * 31; minuslike = minusDay - lastDay + nowDay; }else { minuslike = nowDay -
+			 * lastDay; }
+			 * 
+			 * minuslike = animal.getAnimal_liking() - minuslike;
+			 * 
+			 * if(minuslike < 1) minuslike = 1;
+			 * 
+			 * animal.setAnimal_status(3); animal.setAnimal_liking(minuslike);
+			 * animal.setLast_Access_time(nowTime);
+			 * 
+			 * }else
+			 */
+			if( nowHour < 7 ){
+
+				animal.setAnimal_status(6);
+				animal.setLast_Access_time(nowTime);
+				
+			}else if(animal.getAnimal_status() == 6
+					&& nowHour >= 7) {
+				
+				animal.setAnimal_status(1);
+				animal.setLast_Access_time(nowTime);
+				
+			}else if((lastHour < 8 && 8 < nowHour) || 
+					(lastHour == 8 && 8 == nowHour && 
+					(lastDay != nowDay ||
+							lastMonth != nowMonth ||
+							lastYear != nowYear ))
+					
+					|| (lastHour < 12 && 12 < nowHour)
+					|| (lastHour == 12 && 12 == nowHour && 
+							(lastDay != nowDay ||
+									lastMonth != nowMonth ||
+									lastYear != nowYear ))
+					
+					|| (lastHour < 19 && 19 == nowHour)
+					|| (lastHour == 19 && 19 == nowHour && 
+							(lastDay != nowDay ||
+									lastMonth != nowMonth ||
+									lastYear != nowYear))) {
+
+				animal.setAnimal_status(4);
+				animal.setLast_Access_time(nowTime);
+				
+			}else if( animal.getAnimal_status() == 4 
+					&& ((lastHour == nowHour) || ((60 - lastMinute) + nowMinute <= 60) &&
+					(lastHour < nowHour))) {
+		
+			}else if( animal.getAnimal_status() == 4 
+					&& (((60 - lastMinute) + nowMinute > 60) &&
+							(lastHour < nowHour)) ||
+									lastDay != nowDay ||
+									lastMonth != nowMonth ||
+									lastYear != nowYear ) {
+
+				animal.setAnimal_status(3);
+				animal.setLast_Access_time(nowTime);
+				
+			}else if( animal.getAnimal_status() == 5 
+					&& (nowMinute - lastMinute > 1 || 
+							((60 - lastMinute) + nowMinute > 1) &&
+							(lastHour != nowHour || 
+									lastDay != nowDay ||
+									lastMonth != nowMonth ||
+									lastYear != nowYear ))) {
+
+				animal.setAnimal_status(2);
+				animal.setLast_Access_time(nowTime);
+				
+			}else if( (animal.getAnimal_status() == 2 || 
+					animal.getAnimal_status() == 3 )&& (nowMinute - lastMinute > 1 || 
+					((60 - lastMinute) + nowMinute > 1) &&
+					(lastHour != nowHour || 
+							lastDay != nowDay ||
+							lastMonth != nowMonth ||
+							lastYear != nowYear ))) {
+
+					animal.setAnimal_status(1);
+					animal.setLast_Access_time(nowTime);
+					
+			}else if((animal.getAnimal_status() == 1 ||
+					animal.getAnimal_status() == 7 ||
+					animal.getAnimal_status() == 8 ||
+					animal.getAnimal_status() == 9 ) &&
+					(nowMinute - lastMinute >= 5) || 
+					((60 - lastMinute) + nowMinute >= 5 &&
+					(lastHour != nowHour)) ||
+							(lastDay != nowDay ||
+							lastMonth != nowMonth ||
+							lastYear != nowYear )) {
+				
+				int ranum = random.nextInt(2) + 7;
+				
+				animal.setAnimal_status(ranum);
+				animal.setLast_Access_time(nowTime);
+			}
+		}
+	
+		public void actionUpdate(Integer Animal_id, Integer animal_status, Integer action_num) throws Exception {
+			
+			TamingAnimals Animal = tamingAnimal_findById(Animal_id);
+			
+			if(animal_status == action_num) {
+				if(action_num ==  4) {
+					Animal.setAnimal_status(5);
+					Animal.setAnimal_liking(Animal.getAnimal_liking() + 1);
+					Animal.setLast_Access_time(new Timestamp(System.currentTimeMillis()));
+					animalsave(Animal);
+					
+				}else {
+					Animal.setAnimal_status(2);
+					Animal.setAnimal_liking(Animal.getAnimal_liking() + 1);
+					Animal.setLast_Access_time(new Timestamp(System.currentTimeMillis()));
+					animalsave(Animal);
+				}
+			}else{
+				Animal.setAnimal_status(3);
+				Animal.setLast_Access_time(new Timestamp(System.currentTimeMillis()));
+				animalsave(Animal);
+			}
+		}
+		
+	//동물의 아이디로 TamingAnimals테이블에서 해당 동물의 객체를 불러오고 액션을 저장하는 메서드
+	public TamingAnimals tamingAnimal_findById(Integer animal_id) throws Exception {
+		TamingAnimals animal = aniTamRepo.findById(animal_id).get();
+		aniActSer.getAnimalAction(animal);
+		
+		return animal;
+	}
+
+    //Email 중복 체크를 위한 메서드
+	public boolean isEmailUnique(Integer user_id,String email) {
+		   
+	    User user = userRepo.findByEmail(email);
+
+		if(userRepo.findByEmail(email) == null)
+			return true;
+	       
+	     boolean CreateUser = (user_id == null);
+	     if(CreateUser) {
+	    	 if(user != null) {
+	    	    return false;
+	      }
+	    }else {
+	    	 if(user.getUser_id() != user_id) {
+	    		 return false;
+	    	   }
+	       }
+
+		   return true;
+	 }
+	
+	 //유저 리스트 페이징,Sortring, 검색 처리 메서드  
+	 public Page<User> Pagelist(String keyword,int pageNum,String sortField,String sortDir){
+		 
+		   Sort sort = Sort.by(sortField);
+		   
+		   sort = sortDir.equals("asc") ? sort.ascending() : sort.descending();
+		   
+		   Pageable pageable = PageRequest.of(pageNum - 1, USER_PER_PAGE, sort);
+		   
+		   System.out.println(sort);
+		   
+		   if(keyword != null) {
+			   return userRepo.findAll(keyword,pageable);
+		   }
+		   
+		   return userRepo.findAll(pageable);
+	 }
+	 //유저의 전체 정보를 불러오는 메서드
+	 public List<User> Userlist(){
+		   
+		   return (List<User>) userRepo.findAll();
+	 }
+    // 동물 리스트 페이지 페이징 처리를 위한 메서드
+	public Page<TamingAnimals> listByPage(int num) {
+		
+		Pageable pageable = PageRequest.of(num -1, TAMING_PER_PAGE);
+		
+		return aniTamRepo.findAll(pageable);
+	}
+
+	public List<TamingAnimals> tamingAnimal_findByUserId(Integer user_id) {
+		return aniTamRepo.findByUserId(user_id);
+	}
+	
+	public List<TamingAnimals> SearchAnimal(String keyword){
+		return aniTamRepo.findByTitleContaining(keyword);
+	}
+
+	public List<Integer> Role_FindById(Integer user_id) {
+		
+		List<String> StringRoleList = rolRepo.RolefindByUserId(user_id);
+		List<Integer> IntegerRoleList = new ArrayList<>();
+		
+		for(String Role : StringRoleList) {
+			IntegerRoleList.add(Integer.parseInt(Role.replace("ROLE_","")));
+		}
+		
+		return IntegerRoleList;
+	}
+
+	public List<User> FriendPagelist(int pageNum, List<Integer> roleList) {
+			
+		List<User> Friend = new ArrayList<>();
+		Integer pagesize = roleList.size() % 4;
+		if(pagesize == 0)
+			pagesize = 4;
+		for(pageNum = pageNum ; pageNum <= pagesize ; pageNum++) {
+			Friend.add(userRepo.findById(roleList.get(pageNum - 1)).get());
+		}
+
+		return Friend;
+	}
+
+	public List<User> FriendPageAll(int pageNum, List<Integer> roleList) {
+		
+		List<User> Friend = new ArrayList<>();
+		for(int i = 0 ; i < roleList.size() ; i++) {
+			Friend.add(userRepo.findById(roleList.get(i)).get());
+		}
+		return Friend;
+	}
+}

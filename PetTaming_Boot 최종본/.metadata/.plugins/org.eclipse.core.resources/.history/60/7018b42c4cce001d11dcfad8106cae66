@@ -1,0 +1,845 @@
+package com.pettaming.home;
+
+import java.io.IOException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.repository.query.Param;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pettaming.FileUploadUtil;
+import com.pettaming.PetTamingException;
+import com.pettaming.animal.animalActionService;
+import com.pettaming.entity.Animals;
+import com.pettaming.entity.Color;
+import com.pettaming.entity.Comment;
+import com.pettaming.entity.OAuthToken;
+import com.pettaming.entity.Posts;
+import com.pettaming.entity.TamingAnimals;
+import com.pettaming.entity.User;
+import com.pettaming.entity.action;
+import com.pettaming.entity.action_line;
+import com.pettaming.entity.animalColor;
+import com.pettaming.entity.animalCount;
+import com.pettaming.entity.animalLiking;
+import com.pettaming.entity.animalStatusCount;
+import com.pettaming.post.CommentService;
+import com.pettaming.post.PostService;
+
+
+//MainPage를 관리하기 위한 컨트롤러
+@Controller
+@RequestMapping("/MainPage")
+public class homeController {
+	
+	//홈페이지의 기능을 불러오기 위한 서비스
+	@Autowired
+	private homeService homeservice;
+	
+	//동물 액션관련 기능을 불러오기 위한 서비스
+	@Autowired
+	private animalActionService animalservice;	
+	
+	@Autowired
+	private graphService graphservice;
+	
+	//댓글 기능 서비스
+	@Autowired
+	private CommentService CS;
+	
+	//게시물 기능 서비스
+	@Autowired
+	private PostService PS;
+	
+	//Rest API 카카오 로그인 구현
+	@GetMapping("/kakao/callback")
+	public @ResponseBody String KakaoAuthLogin(String code) throws JsonMappingException, JsonProcessingException {
+		
+		//POST 방식으로 Key=value 데이터를 요청(카카오로)
+		RestTemplate rt = new RestTemplate();
+		
+		//HttpHeader 객체 생성
+		HttpHeaders header = new HttpHeaders();
+		header.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+		
+		//HttpBody 객체 생성
+		MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+		params.add("grant_type", "authorization_code");
+		params.add("client_id", "06763deb76a33525d05d5074152c0cf4");
+		params.add("redirect_uri", "http://localhost:7777/PetTaming/MainPage/kakao/callback");
+		params.add("code", code);
+		
+		//HttpHader와 Body를 하나의 객체에 담기
+		HttpEntity<MultiValueMap<String,String>> kakaoTokenRequest
+		= new HttpEntity<>(params,header);
+		
+		//Http요청을 Post방식으로 요청
+		//Response의 응답이 String으로 이루어짐
+		ResponseEntity<String> response = rt.exchange(
+			    "https://kauth.kakao.com/oauth/token",
+				HttpMethod.POST,
+				kakaoTokenRequest,
+				String.class
+				);
+		
+		ObjectMapper obMapper = new ObjectMapper();
+		
+		OAuthToken oauthToken = null;
+		try {
+		oauthToken = obMapper.readValue(response.getBody(), OAuthToken.class);
+		}catch(JsonMappingException e){
+			e.printStackTrace();
+		}catch(JsonProcessingException e) {
+			e.printStackTrace();
+		}
+		oauthToken.setAccess_token(oauthToken.getAccess_token());
+		
+        RestTemplate rt2 = new RestTemplate();
+		
+		//HttpHeader 객체 생성
+		HttpHeaders header2 = new HttpHeaders();
+		header2.add("Authorization", "Bearer " + oauthToken.getAccess_token());
+		header2.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+		
+		//HttpBody 객체 생성
+		
+		//HttpHader와 Body를 하나의 객체에 담기
+		HttpEntity<MultiValueMap<String,String>> kakaoProfileRequest
+		= new HttpEntity<>(header2);
+		
+		//Http요청을 Post방식으로 요청
+		//Response의 응답이 String으로 이루어짐
+		ResponseEntity<String> response2 = rt2.exchange(
+			    "https://kapi.kakao.com/v1/user/access_token_info",
+				HttpMethod.POST,
+				kakaoProfileRequest,
+				String.class
+				);
+		
+		return response.getBody();
+	}
+		
+
+	@GetMapping("/home")
+	public String homePage(Model model) {
+		
+		return "home";
+	}
+	
+	//메인페이지를 출력하는 메서드
+	@GetMapping("/Main")
+	public String viweMainPage(Model model
+			,Authentication auth) throws Exception {	
+		//TamingAnimals 테이블의 모든 동물의 액션을 시간 지남에 따라 업데이트 후 객체에 저장
+		List<TamingAnimals> allAnimals = homeservice.animal_update_findAll();
+			
+		//업데이트 된 테이블 정보를 바탕으로 모든 동물들의 액션을 저장
+		animalservice.getAllAnimalAction(allAnimals);
+
+		User user = null;
+		try {
+		//현제 로그인 유저의 정보 출력
+		user =  homeservice.findByUserName(auth.getName());			
+		} catch( Exception e) {
+		user = new User();
+		user.setUser_id(0);
+		}
+		//저장된 TamingAnimals와 유저정보, 페이지의 이름을 어트리뷰트로 저장
+		model.addAttribute("user", user);
+		model.addAttribute("allAnimals", allAnimals);
+		model.addAttribute("pageTitle", "PetTaming");
+		return "MainPage";
+	}
+	
+	@GetMapping("/User/Mypage")
+	public String UserMyPage(Model theModel,
+			Authentication auth) throws Exception {
+		
+		User user = homeservice.findByUserName(auth.getName());
+		
+		List<TamingAnimals> TA = homeservice.tamingAnimal_findByUserId(user.getUser_id());
+
+		animalservice.getAllAnimalAction(TA);
+
+		theModel.addAttribute("MyAccount", user);
+		
+		theModel.addAttribute("Users", user);
+		
+		theModel.addAttribute("allAnimals", TA);
+		
+		theModel.addAttribute("pageTitle", "마이페이지 입니다.");
+		
+		return "detailUser";
+	}
+
+	@GetMapping("/User/Mypage/{User}")
+	public String UserMyPageViwe (Model theModel
+			,Authentication auth
+			,@PathVariable(name="User") Integer User_id) throws Exception {
+		
+		User user = homeservice.findById(User_id);	
+		
+		List<TamingAnimals> TA = homeservice.tamingAnimal_findByUserId(User_id);
+
+		animalservice.getAllAnimalAction(TA);
+
+		theModel.addAttribute("MyAccount", homeservice.findByUserName(auth.getName()));
+		
+		theModel.addAttribute("Users", user);
+		
+		theModel.addAttribute("allAnimals", TA);
+		
+		theModel.addAttribute("pageTitle", "마이페이지 입니다.");
+		
+		return "detailUser";
+	}
+	
+	@GetMapping("/User/Mypage/navi/{id}")
+	public String UserNavMyPage(@PathVariable("id") Integer user_id, Model theModel,
+			Authentication auth) {
+		
+		User user = new User();
+		
+		TamingAnimals TA = new TamingAnimals();
+		
+		user = homeservice.findById(user_id);	
+		
+		user = homeservice.findByUserName(auth.getName());
+			
+		TA.setUser_id(user);
+		
+		theModel.addAttribute("Users", user);
+		
+		theModel.addAttribute("Animals", TA);
+		
+		theModel.addAttribute("pageTitle", user.getUsername() + "님의 마이페이지 입니다.");
+		
+		return "detailUser";
+	}
+	
+	@GetMapping("/User/AddFriend/{User}/{AnimalMaster}")
+	public String AddFriend(
+			HttpServletRequest request
+			,Authentication authentication
+			,@PathVariable(name="AnimalMaster") Integer AnimalMaster_id
+			,@PathVariable(name="User") Integer User_id) {
+		
+		homeservice.saveRole(User_id,AnimalMaster_id);
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		List<GrantedAuthority> updatedAuthorities = new ArrayList<>(auth.getAuthorities());
+		updatedAuthorities.add(new SimpleGrantedAuthority("ROLE_" + AnimalMaster_id));
+		Authentication newAuth = new UsernamePasswordAuthenticationToken(authentication.getPrincipal(), authentication.getCredentials(), updatedAuthorities);
+		SecurityContextHolder.getContext().setAuthentication(newAuth);
+		
+		if (request.getHeader("Referer") != null) {
+		    return "redirect:" + request.getHeader("Referer");
+		  } else {
+				return "redirect:/MainPage/Main";
+		  }
+
+	}
+	
+	@GetMapping("/User/DeleteFriend/{User}/{AnimalMaster}")
+	public String DeleteFriend(
+			HttpServletRequest request
+			,Authentication authentication
+			,@PathVariable(name="AnimalMaster") Integer AnimalMaster_id
+			,@PathVariable(name="User") Integer User_id) {
+
+		homeservice.deleteRole(User_id,AnimalMaster_id);
+
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		List<GrantedAuthority> updatedAuthorities = new ArrayList<>(auth.getAuthorities());
+		updatedAuthorities.remove(new SimpleGrantedAuthority("ROLE_" + AnimalMaster_id));
+		Authentication newAuth = new UsernamePasswordAuthenticationToken(authentication.getPrincipal(), authentication.getCredentials(), updatedAuthorities);
+		SecurityContextHolder.getContext().setAuthentication(newAuth);
+
+		if (request.getHeader("Referer") != null) {
+		    return "redirect:" + request.getHeader("Referer");
+		  } else {
+				return "redirect:/MainPage/Main";
+		  }
+	}
+
+	//회원가입 페이지 출력 메서드
+	@GetMapping("/User/new")
+	public String newUserPage(Model model) {
+		
+		//새 유저를 생성
+		User theUser = new User();
+		//생성된 유저와 페이지의 이름을 어트리뷰트로 저장	
+		model.addAttribute("authority", "user");
+		model.addAttribute("users", theUser);
+		model.addAttribute("pageTitle", "회원 가입");
+		
+		return "newUser";
+	}
+    
+	//유저 정보 업데이트
+	@GetMapping("/User/update/{authority}/{id}")
+	public String updateUser(@PathVariable("id") Integer id
+			, @PathVariable("authority") String authority
+			, Model theModel, RedirectAttributes RA) throws PetTamingException {
+		
+		User user = homeservice.findById(id);
+		
+		if(user.getPassword() == null) {
+			theModel.addAttribute("check","new");
+		}
+		
+		theModel.addAttribute("users",user);
+		theModel.addAttribute("getid",id);
+		theModel.addAttribute("authority", authority);
+
+		
+		theModel.addAttribute("pageTitle", user.getUsername() + "님 정보 수정 페이지.");
+		
+		return "newUser";
+		
+	}	
+	//회원가입 페이지에서 저장한 유저 정보를 테이블에 업데이트 하기 위한 메서드
+	//사진 업로드 시 기존 사진 삭제
+	@PostMapping("/User/save/{authority}")
+	public String newUserSave(@ModelAttribute("user")User user
+			, @RequestParam("image") MultipartFile multipartFile
+			, @PathVariable("authority") String authority
+			, Model theModel,
+			RedirectAttributes reAt) throws IOException{
+		
+		if(!multipartFile.isEmpty()) {
+			String filename = StringUtils.cleanPath(multipartFile.getOriginalFilename());
+			user.setPhotos(filename);
+			homeservice.save(user);
+			User saveUser = homeservice.findByUserName(user.getEmail());
+			String uploadDir = "User-photos/" + saveUser.getUser_id();//
+			
+			FileUploadUtil.cleanDir(uploadDir);
+			FileUploadUtil.saveFile(uploadDir, filename, multipartFile);
+		}else {
+			if(user.getPhotos().isEmpty()) {
+				user.setPhotos(null);
+			}
+			homeservice.save(user);
+		}
+
+		   if(authority.equals("user"))
+				return "redirect:/MainPage/Main";
+		   else if(authority.equals("admin"))
+			   return "redirect:/MainPage/admin/User";
+		   
+		return "redirect:/MainPage/Main";
+	}	
+	
+	@GetMapping("/User/delete/{authority}/{id}")
+	public String deleteUser(@PathVariable("id") Integer id
+			, @PathVariable("authority") String authority
+			, Model theModel) {
+
+	   homeservice.deleteById(id);
+	   
+	   if(authority.equals("user"))
+		   return "redirect:/login?logout";
+	   else if(authority.equals("admin"))
+		   return "redirect:/MainPage/admin/User";
+	   
+	   return "redirect:/MainPage/User";
+	}
+
+	//페이징 처리된 유저 리스트 출
+	@GetMapping("/User")
+	public String findAll(Model theModel,Authentication auth) {
+				
+		return listByPage(1,"User",null,theModel, auth, "username", "asc");
+	}
+	
+	
+	//유저 리스트 페이징, Sorting, 검색 처리
+	@GetMapping("/{authority}/page/{pageNum}")
+	public String listByPage(@PathVariable(name = "pageNum") int pageNum
+			, @PathVariable("authority") String authority
+			,@Param("keyword") String keyword
+			, Model theModel
+			, Authentication auth
+			, @Param("sortField") String sortField,
+			@Param("sortDir") String sortDir) {
+		
+		String reversesortDir = sortDir.equals("asc") ? "desc" : "asc";
+
+		User user = homeservice.findByUserName(auth.getName());
+		theModel.addAttribute("currentPage", pageNum);
+
+		theModel.addAttribute("user",user);
+		
+		System.out.println("유저: " + sortField);
+		System.out.println("유저: " + sortDir);
+
+		if(authority.equals("Friend")) {
+			List<Integer> RoleList = homeservice.Role_FindById(user.getUser_id());
+			List<User> listUser = homeservice.FriendPagelist(pageNum,RoleList);
+			List<User> page = homeservice.FriendPageAll(pageNum,RoleList);
+
+			theModel.addAttribute("Userlist", listUser);
+			theModel.addAttribute("totalPages", (int)(Math.ceil((double)(page.size()/4))) + 1);
+			theModel.addAttribute("totalItems", page.size());
+
+			long startCount = (pageNum -1) * homeservice.USER_PER_PAGE + 1;
+			long endCount = startCount + homeservice.USER_PER_PAGE -1;
+
+			if(endCount > page.size()){
+				endCount = page.size();
+			}
+			theModel.addAttribute("startCount", startCount);
+			theModel.addAttribute("endCount", endCount);
+		}
+		
+		else {
+			Page<User> page = homeservice.Pagelist(keyword,pageNum,sortField,sortDir);
+			List<User> listUser = page.getContent();
+			
+			theModel.addAttribute("Userlist", listUser);
+			theModel.addAttribute("totalPages", page.getTotalPages());
+			theModel.addAttribute("totalItems", page.getTotalElements());
+			
+			long startCount = (pageNum -1) * homeservice.USER_PER_PAGE + 1;
+			long endCount = startCount + homeservice.USER_PER_PAGE -1;
+			if(endCount > page.getTotalElements()){
+				endCount = page.getTotalElements();
+				
+			}
+			if(endCount > page.getTotalElements()){
+				endCount = page.getTotalElements();
+			}
+			theModel.addAttribute("startCount", startCount);
+			theModel.addAttribute("endCount", endCount);
+		}
+
+		
+		theModel.addAttribute("keyword",keyword);
+		theModel.addAttribute("sortField",sortField);
+		theModel.addAttribute("sortDir",sortDir);
+		theModel.addAttribute("reversesortDir",reversesortDir);
+				
+
+		   if(authority.equals("User"))
+				return "Userlist";
+		   else if(authority.equals("Admin"))
+				return "AdminUserlist";
+		   else if(authority.equals("Friend"))
+				return "FriendList";
+			return "Userlist";
+	}
+			
+	//동물 검색
+	
+	@GetMapping("/Animal/Search")
+	public String searchAnimal(@Param("SearchText") String SearchText,Model theModel) {
+		
+		List<TamingAnimals> TM = homeservice.SearchAnimal(SearchText);
+		
+		theModel.addAttribute("Text",TM);
+		
+		return "redirect:/MainPage/Main";
+	}
+	//새 동물을 생성하기 위한 페이지 출력 메서드
+	@GetMapping("/Animal/new")
+	public String newAnimalPage(Model model
+			,Authentication auth
+			,@Param("animal_id") Integer animal_id
+			,@Param("color_1") Integer color_1
+			,@Param("color_2") Integer color_2
+			,@Param("color_border") Integer color_border) throws Exception {
+		
+		//현제 로그인 유저의 정보 출력
+		User user =  homeservice.findByUserName(auth.getName());
+		
+		//동물이 선택되지 않았다면 고양이(1)를 저장
+		if(animal_id == null)
+			animal_id = 1;
+		
+		//선택된 동물의 기본(1)액션을 저장
+		action action1 = animalservice.action_Select(animal_id, String.valueOf(1));
+		action action2 = animalservice.action_Select(animal_id, String.valueOf(1) + "_action");	
+		
+		//색이 선택되지 않았을때 기본색을 저장
+		if(color_1 == null)
+			color_1 = 1;
+		if(color_2 == null)
+			color_2 = 6;
+		if(color_border == null)
+			color_border = 2;
+		
+		//선택된 색을 각 객체이름에 저장
+		Color color_1_entity = animalservice.color_findById(color_1);
+		Color color_2_entity = animalservice.color_findById(color_2);
+		Color color_border_entity = animalservice.color_findById(color_border);
+		
+		//모든 기본정보를 TamingAnimals 객체에 저장
+		TamingAnimals newTamingAnimal = new TamingAnimals(null,null, user, 
+				animalservice.animal_findById(animal_id),
+				1,
+				5, 
+				color_border_entity.getColor(), 
+				color_1_entity.getColor(),
+				color_2_entity.getColor(), 
+				new Timestamp(System.currentTimeMillis()));
+		
+		 //동물 생성에 필요한 각 정보들을 어트리뷰트에 저장
+		 model.addAttribute("AllAnimal", animalservice.animal_findAll());
+		 model.addAttribute("users", user);
+		 model.addAttribute("Animal", newTamingAnimal);
+		 
+		 model.addAttribute("animalid", animal_id);
+		 model.addAttribute("action1", action1);
+		 model.addAttribute("action2", action2);
+		 
+		 model.addAttribute("color_1",color_1_entity);
+		 model.addAttribute("color_2",color_2_entity);
+		 model.addAttribute("color_border",color_border_entity);	 
+		 model.addAttribute("colorList", animalservice.color_findAll());	 
+		 model.addAttribute("pageTitle", "나만의 펫 생성");	 
+		 
+		return "newAnimal";
+	}
+	
+	//동물 생성 페이지에서 선택한 변경사항을 적용하기 위한 메서드
+	@GetMapping("/Animal/new/{part}/{color}/{nonSelect1}/{nonSelect2}/{animalId}")
+	public String newAnimalPage_Update(
+			RedirectAttributes reAt
+			,@PathVariable(name="part") String part
+			,@PathVariable(name="color") Integer color
+			,@PathVariable(name="nonSelect1") Integer nonSelect1
+			,@PathVariable(name="nonSelect2") Integer nonSelect2
+			,@PathVariable(name="animalId") Integer animal_id) throws Exception {
+
+		reAt.addAttribute("animal_id", animal_id);
+		System.out.println(part + "," + color + "," + nonSelect1 + "," + nonSelect2 + "," + animal_id);
+		
+		if(part.equals("animal")) {
+			
+			reAt.addAttribute("color_1", color);
+			reAt.addAttribute("color_2", nonSelect1);
+			reAt.addAttribute("color_border", nonSelect2);
+			
+		} else {
+			reAt.addAttribute(part , color);
+		}
+		
+		
+		if (part.equals("color_2") || part.equals("color_border")) 
+			reAt.addAttribute("color_1", nonSelect1);
+		
+		if (part.equals("color_1") || part.equals("color_2")) 
+			reAt.addAttribute("color_border", nonSelect2);
+		
+		if (part.equals("color_border")) 
+			reAt.addAttribute("color_2", nonSelect2);
+
+		if (part.equals("color_1")) 
+			reAt.addAttribute("color_2", nonSelect1);
+		 
+		return "redirect:/MainPage/Animal/new";
+	}
+	
+
+	//동물 생성 페이지에서 저장된 정보를 TamingAnimals테이블에 저장
+	@PostMapping("/Animal/save")
+	public String saveAnimal(TamingAnimals newAnimal) throws Exception {
+		homeservice.animalsave(newAnimal);
+		return "redirect:/MainPage/Main";
+	}
+	
+	   //선택된 동물을 출력하기 위한 메서드
+	@GetMapping("/ViweAnimal/{Animal_id}")
+	public String viweAnimal(Model model
+	      , Authentication auth
+	      , @PathVariable(name="Animal_id") Integer Animal_id) throws Exception{
+	      
+	      User user = null;
+	      try {
+	      //현제 로그인 유저의 정보 출력
+	      user =  homeservice.findByUserName(auth.getName());
+	      } catch( Exception e) {
+	      user = new User();
+	      user.setUser_id(0);
+	      }
+	      
+	      TamingAnimals animal = homeservice.tamingAnimal_findById(Animal_id);
+	      
+	      model.addAttribute("user",user);
+	      model.addAttribute("Animals",animal);
+	      model.addAttribute("pageTitle", "View Animal");
+	       
+	      return "viewAnimal";
+	 }
+	
+	//선택된 동물이 요구한 행동에 맞춰 업데이트 되는 메서드
+	@GetMapping("/ViweAnimal/{Animal_id}/{Animal_status}/{action_num}")
+	public String viweAnimalUpdate(Model model
+			, RedirectAttributes reAt
+			, @PathVariable(name="Animal_id") Integer Animal_id
+			, @PathVariable(name="Animal_status") Integer Animal_status
+			, @PathVariable(name="action_num") Integer action_num) throws Exception {
+
+		homeservice.actionUpdate(Animal_id,Animal_status,action_num);
+		 
+		return "redirect:/MainPage/ViweAnimal/" + Animal_id;
+		
+	}
+
+	@GetMapping("/admin/{viwepage}")
+	public String adminPage(Model model
+			,@PathVariable(name="viwepage") String viwepage) {
+		
+		if(viwepage.equals("Graph")) {
+	
+			model.addAttribute("animalCountList",graphservice.getAnimalCount());
+			model.addAttribute("animalStatusCountList",graphservice.getAnimalStatusCount());
+			model.addAttribute("animalLikingCountList",graphservice.getAnimalanimalLikingCount());
+			model.addAttribute("animalColorCountList",graphservice.getAnimalanimalColorCount());
+			
+		}else if(viwepage.equals("User")) {
+			return "redirect:/MainPage/Admin/page/1?sortField=username&sortDir=asc";
+					
+		}else if(viwepage.equals("Animal")) {
+			model.addAttribute("AllAnimals", homeservice.animal_findAll());
+			return "adminAnimal" ;
+		}
+		
+		model.addAttribute("SeletMenu", viwepage);
+		model.addAttribute("pageTitle", "Admin Page");
+
+		return "adminPage" ;
+	}
+	
+	
+	//게시물 리스트 생성
+	@GetMapping("/Post")
+	public String Postlist(Model theModel,String keyword,Authentication auth){					
+				
+		return listByPage(1,theModel,auth,null,"createDate", "desc");
+	
+	}
+	//게시물 페이징 처리 및 검색
+	@GetMapping("/page/{pageNum}")
+	public String listByPage(@PathVariable(name = "pageNum") int pageNum,Model theModel,
+			Authentication auth,@Param("Keyword") String keyword,@Param("SortFields") String SortFields,
+			@Param("SortDirs") String SortDirs){
+		
+		System.out.println(SortFields);
+		System.out.println(SortDirs);
+		
+		Page<Posts> page = PS.listByPage(keyword,pageNum,SortFields,SortDirs);
+		
+		List<Posts> Posts = page.getContent();
+		
+		theModel.addAttribute("Postlist", Posts);
+		
+		User user = homeservice.findByUserName(auth.getName());
+		
+		theModel.addAttribute("users",user);
+		
+		String ReversesortDirs = SortDirs.equals("asc") ? "desc" : "asc";		
+		
+		long startCount = (pageNum - 1) * PS.POST_PER_PAGE + 1;
+		
+		long endCount = startCount + PS.POST_PER_PAGE - 1;
+		
+		if(endCount > page.getTotalElements()) {
+			endCount = page.getTotalElements();
+		}
+		
+		theModel.addAttribute("start",startCount);
+		theModel.addAttribute("end", endCount);
+		theModel.addAttribute("total",page.getTotalPages());
+		theModel.addAttribute("current", pageNum);
+		theModel.addAttribute("Item", page.getTotalElements());
+		theModel.addAttribute("Keywords", keyword);
+		theModel.addAttribute("SortFields",SortFields);
+		theModel.addAttribute("SortDirs",SortDirs);
+		theModel.addAttribute("ReversesortDirs",ReversesortDirs);
+		
+		
+		return "Postlist";
+	}
+	
+	//게시물 저장
+	@PostMapping("/Post/save")
+	public String savePost(@ModelAttribute("Posts") Posts post, Model theModel,Authentication auth){
+		
+		User user = homeservice.findByUserName(auth.getName());
+		
+		post.setUser_id(user);
+		
+		PS.save(post);
+		
+		return "redirect:/MainPage/Post/";
+
+	}
+	//게시물 등록
+	@GetMapping("/Post/new")
+	public String newPost(Model theModel, Authentication auth){
+		
+		Posts post = new Posts();
+		
+		User user = new User();
+		
+		//로그인한 유저 정보 가져오기
+		user = homeservice.findByUserName(auth.getName());
+		
+		//로그인한 유저 정보 기반으로 게시물 작성자 정의
+		post.setUser_id(user);
+		
+		post.setView(0);
+				
+		theModel.addAttribute("Posts",post);
+		
+		theModel.addAttribute("user_id",user);
+		
+		theModel.addAttribute("pageTitle","게시물 작성");
+		
+		return "NewPost";
+	}
+	//게시물 상세보기
+	@GetMapping("/Post/get/{post_id}")
+	public String getPost(@PathVariable("post_id") Integer post_id, Model theModel
+			,Authentication auth,String keyword) {
+		
+		User user = homeservice.findByUserName(auth.getName());
+		
+		Posts getpost = PS.findByPostId(post_id);
+		
+		//게시물 댓글 목록 조회
+		List<Comment> ALLcomment = CS.higherComment(post_id);
+		
+		Comment comment = new Comment();
+		
+		getpost.setUser_id(homeservice.findByUserName(auth.getName()));
+		
+		comment.setUser(homeservice.findByUserName(auth.getName()));	
+		
+		theModel.addAttribute("Commented",comment);
+		
+		//조회수 업데이트		
+		PS.UpdateView(post_id); 
+		
+		theModel.addAttribute("user",user);
+		
+		theModel.addAttribute("getPost",getpost);
+		
+		theModel.addAttribute("Comment", new Comment());
+		
+		theModel.addAttribute("ALLComment", ALLcomment);
+		
+		return "detailPost";
+	}
+	
+	//게시물 삭제
+	@GetMapping("/Post/delete/{post_id}")
+	public String deletePost(@PathVariable("post_id") Integer post_id, Model theModel
+			,Authentication auth) {
+		
+		
+		User user = homeservice.findByUserName(auth.getName());
+		
+		theModel.addAttribute("pUser",user);
+		
+		PS.deleteById(post_id);
+		
+		return "redirect:/MainPage/Post";
+	}
+	
+	//게시물 업데이트
+	@GetMapping("/Post/update/{authority}/{post_id}")
+	public String UpdatePost(@PathVariable("post_id") Integer post_id
+			, @PathVariable("authority") String authority
+			, Model theModel,Authentication auth, RedirectAttributes RA) throws PetTamingException {
+		
+		Posts posts = PS.findByPostId(post_id);	
+		
+		User user = homeservice.findByUserName(auth.getName());
+		
+		theModel.addAttribute("User",user);		
+		theModel.addAttribute("Posts",posts);
+		theModel.addAttribute("authority", authority);		
+		theModel.addAttribute("pageTitle", "게시물 수정");
+		
+		return "newPost";
+	}	
+	//댓글 저장
+	@PostMapping("/Comment/save/{Posts}")
+	public String saveComment(@ModelAttribute("Comments") Comment comment
+			,@PathVariable("Posts") Integer posts
+			,Authentication auth) {
+		
+		comment.setUser(homeservice.findByUserName(auth.getName()));
+		comment.setPosts(PS.findByPostId(posts));
+		CS.saveComment(comment);
+		 		 		 
+		return "redirect:/MainPage/Post/get/" + posts;
+	}
+	//댓글 수정
+	@GetMapping("/Comment/update/{Posts}")
+	public String updateComment(@ModelAttribute("Comments") Comment comment,@PathVariable("Posts") Integer posts,
+			Model theModel,Authentication auth) {
+		
+		Comment comments = CS.findByCommentId(posts);		
+		
+	    comments.setUser(homeservice.findByUserName(auth.getName()));
+		
+		comments.setPosts(PS.findByPostId(posts));
+		
+		theModel.addAttribute("comments",comments);
+		
+		return "detailPost";
+	}
+	//댓글 삭제
+	@GetMapping("/Comment/delete/{Posts}")
+	public String deleteComment(@ModelAttribute("Comments") Comment comments,
+			@PathVariable("Posts") Integer posts,Model theModel,Authentication auth) {
+		
+		User user = homeservice.findByUserName(auth.getName());
+		
+		comments.setPosts(PS.findByPostId(posts));
+		
+		theModel.addAttribute("dUser", user);
+		
+		CS.deleteComment(posts);
+		
+		return "redirect:/MainPage/Post/get" + posts;
+	}
+	
+	
+}

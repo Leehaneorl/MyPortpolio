@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">	
+	<head th:text-align = "center" th:replace="fragments :: page_head('PetTaming-Main')">		
+		<script type="text/javascript" th:src="@{/js/common.js}"></script>	
+	</head>
+<body>		   
+	  <div th:replace="navigation :: menu"></div>
+		<header class="bg-dark py-5">
+            <div class="container px-4 px-lg-5 my-5">
+                <div class="text-center text-white">
+                    <h1 class="display-4 fw-bolder">PetTaming Userlist</h1>
+                </div>
+            </div>
+        </header>
+        
+        <table class="table table-striped">
+           <thead class="thead-dark">
+            <tr>
+              <th scope="col" style="width: 10%">번호</th>
+              <th scope="col">사진</th>
+              <th scope="col" style="width: 10%">이름</th>
+              <th scope="col" style="width: 15%">이메일</th>
+              <th scope="col" style="width: 15%">친구 추가/삭제</th>       
+             </tr>
+           </thead>
+  
+          <tbody>
+           <tr th:each="Userlist : ${Userlist}">
+             <td th:text="${Userlist.user_id}"></td>
+             <td><a th:href = "@{'/MainPage/User/Mypage/' + ${Userlist.user_id}}">
+			     <img th:src= "@{${Userlist.photosImagePath}}" style = "width: 100px;"/></a>
+			 </td>
+             <td th:text="${Userlist.username}"></td>
+             <td th:text="${Userlist.email}"></td>
+            <td><a th:if="${#authorization.expression('hasRole(''ROLE_' + Userlist.user_id + ''')')}"
+              th:href="@{'/MainPage/User/DeleteFriend/' + ${user.user_id} + '/' + ${Userlist.user_id}}">
+              친구 삭제
+             </a>
+             <a th:unless="${#authorization.expression('hasRole(''ROLE_' + Userlist.user_id + ''')')}"
+             th:href="@{'/MainPage/User/AddFriend/' + ${user.user_id} + '/' + ${Userlist.user_id}}">
+              친구 추가
+             </a>
+             </td>
+          </tr>
+          </tbody> 
+        </table>
+                       
+	<nav>
+		<ul class = "pagenation justify-content-center" id = "userpage">
+			<li th:class = "${currentPage != 1 ? 'page-Item active' : 'page-item'}">
+				<a class = "page-link" th:href = "@{/MainPage/Friend/page/1}">First</a>
+			</li>
+			<li th:class = "${currentPage > 1 ? 'page-Item' : 'page-item disabled'}">
+				<a class = "page-link" th:href = "@{'/MainPage/Friend/page/' + ${currentPage-1}}">Previous</a>
+			</li>
+			<li th:class = "${currentPage != i ? 'page-Item' : 'page-item active'}"
+			     th:each = "i : ${#numbers.sequence(1,totalPages)}">
+				<a class = "page-link" th:href = "@{'/MainPage/Friend/page/' + ${i}}">[[${i}]]</a>
+			</li>
+			<li th:class = "${currentPage < totalPages ? 'page-Item' : 'page-item disabled'}">
+				<a class = "page-link" th:href = "@{'/MainPage/Friend/page/' + ${currentPage+1}}">Next</a>
+			</li>
+			<li th:class = "${currentPage != totalPages ? 'page-Item active' : 'page-item'}">
+				<a class = "page-link" th:href = "@{'/MainPage/Friend/page/' + ${totalPages}}">Last</a>
+			</li>
+		</ul>
+	</nav>
+	   <br></br>
+		<div class = "text-center m-1" th:if = "${totalItems} > 0">
+			<span>Showing users # [[${startCount}]] to [[${endCount}]] of [[${totalItems}]]</span>
+		</div>
+		<div class = "text-center m-1" th:unless = "${totalItems > 0}">
+			<span>No users found</span>
+		</div>		
+  		
+	  <div th:replace="fragments :: footer"></div>
+          <div class="modal fade text-center" id="modalDialog">
+               <div class="modal-dialog">
+				 <div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title" id="modalTitle">Warning</h4>
+						 <button type="button" class="close" data-dismiss="moadl">&times;</button>
+					</div>
+						<div class="modal-body">
+							<span id="modalBody"></span>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+							</div>
+						</div>
+					</div>
+				</div>
+ <script type = "text/javascript">
+	
+	$(document).ready(function(){
+		$(".link-delete").on("click",function(e){
+			e.preventDefault();
+			link = $(this);
+			userId = link.attr("userId");
+			$("#yesButton").attr("href",link.attr("href"));
+			$("#confirmText").text("해당 " + userId + "를 정말 삭제하시겠습니까?" );
+			$("#confirmModal").modal();
+		});
+	});	
+</script>				
+        <script th:src="@{https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js}"></script>
+        <script th:src="@{/js/scripts.js}"></script>					
+	</body>
+</html>

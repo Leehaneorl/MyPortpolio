@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="MavenProjectWizardLocationPage">
+		<list key="location">
+		</list>
+		<list key="projectNameTemplate">
+			<item value="[artifactId]"/>
+			<item value="[artifactId]-TRUNK"/>
+			<item value="[artifactId]-[version]"/>
+			<item value="[groupId].[artifactId]"/>
+			<item value="[groupId].[artifactId]-[version]"/>
+			<item value="[name]"/>
+		</list>
+	</section>
+	<section name="MavenProjectWizardArchetypePage">
+		<list key="projectNameTemplate">
+			<item value="[artifactId]"/>
+			<item value="[artifactId]-TRUNK"/>
+			<item value="[artifactId]-[version]"/>
+			<item value="[groupId].[artifactId]"/>
+			<item value="[groupId].[artifactId]-[version]"/>
+			<item value="[name]"/>
+		</list>
+	</section>
+	<section name="Maven2ProjectWizardArchifactPage">
+		<list key="package">
+		</list>
+		<list key="groupId">
+		</list>
+		<list key="artifactId">
+		</list>
+		<list key="projectNameTemplate">
+			<item value="[artifactId]"/>
+			<item value="[artifactId]-TRUNK"/>
+			<item value="[artifactId]-[version]"/>
+			<item value="[groupId].[artifactId]"/>
+			<item value="[groupId].[artifactId]-[version]"/>
+			<item value="[name]"/>
+		</list>
+		<list key="version">
+			<item value="0.0.1-SNAPSHOT"/>
+		</list>
+	</section>
+	<section name="MavenProjectWizardArtifactPage">
+		<list key="groupId">
+			<item value="PetTamingProject"/>
+			<item value="Project"/>
+			<item value="com.pettaming"/>
+			<item value="com.artshop"/>
+			<item value="com.shope"/>
+		</list>
+		<list key="name">
+			<item value="PetTamingProject"/>
+			<item value="Project"/>
+			<item value="ArtshopProject"/>
+			<item value="ShopeProject"/>
+		</list>
+		<list key="artifactId">
+			<item value="PetTamingProject"/>
+			<item value="Project"/>
+			<item value="ArtshopProject"/>
+			<item value="ShopeProject"/>
+		</list>
+		<list key="projectNameTemplate">
+			<item value="[artifactId]"/>
+			<item value="[artifactId]-TRUNK"/>
+			<item value="[artifactId]-[version]"/>
+			<item value="[groupId].[artifactId]"/>
+			<item value="[groupId].[artifactId]-[version]"/>
+			<item value="[name]"/>
+		</list>
+		<list key="version">
+			<item value="0.0.1-SNAPSHOT"/>
+		</list>
+	</section>
+	<section name="org.eclipse.m2e.core.pom.overview">
+	</section>
+	<section name="org.eclipse.m2e.core.pom.dependencies">
+	</section>
+	<section name="MavenProjectImportWizardPage">
+		<list key="rootDirectory">
+			<item value="D:\PetTaming_Boot 최종본2차"/>
+			<item value="D:\PetTaming_Boot 0327 1858 최종본1차"/>
+			<item value="D:\PetTaming_Boot 03220816"/>
+			<item value="D:\PetTaming_Boot 0316 0328"/>
+			<item value="D:\PetTaming_Boot 0314 0537"/>
+			<item value="D:\0900 취업반_3\마지막 포트폴리오\1차 최종본 0314 1152\PetTaming_Boot 0314 0537"/>
+			<item value="D:\0900 취업반_3\마지막 포트폴리오\1차 최종본 0314 1152\PetTaming_Boot 0312 0428"/>
+			<item value="D:\PetTaming_Boot 0312 0428\PetTamingProject"/>
+			<item value="D:\PetTaming_Boot\PetTamingProject"/>
+			<item value="D:\SpringProject\Boot_project\ArtshopProject"/>
+			<item value="D:\SpringProject\Work-space\spring"/>
+			<item value="D:\SpringProject\Work-space\ShopeProject"/>
+			<item value="D:\SpringProject\Work-space\ShopeProject\ShopeWebParent"/>
+			<item value="D:\SpringProject\Work-space\ShopeProject\ShopeCommon"/>
+		</list>
+		<list key="projectNameTemplate">
+			<item value="[artifactId]"/>
+			<item value="[artifactId]-TRUNK"/>
+			<item value="[artifactId]-[version]"/>
+			<item value="[groupId].[artifactId]"/>
+			<item value="[groupId].[artifactId]-[version]"/>
+			<item value="[name]"/>
+		</list>
+	</section>
+</section>

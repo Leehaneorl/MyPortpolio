@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html  lang="en" xmlns:th="http://www.thymeleaf.org">	
+	 <head th:text-align = "center" th:replace="fragments :: page_head('PetTaming-Main')">  
+    </head>
+    
+ <script>
+	$(document).ready(function() {
+			$("#logoutLink").on("click", function(e){;
+				e.preventDefault();
+				document.logoutForm.submit();
+				//$("#logoutForm").submit();
+			});
+	});
+</script>
+
+<body id = "page-top">
+	
+	   <nav class="navbar navbar-expand-lg navbar-light fixed-top py-3" id="mainNav" th:fragment="menu">
+            <div class="container px-4 px-lg-5">
+                <a class="navbar-brand" th:href="@{/MainPage/home}">Pet Taming</a>
+                <button class="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon"></span>
+				</button>
+                <div class="collapse navbar-collapse" id="navbarResponsive">
+                    <ul class="navbar-nav ms-auto my-2 my-lg-0">
+                        <li sec:authorize="isAnonymous()" class="nav-item"><a class="nav-link" th:href="@{/login}">로그인</a></li>         
+                        <li sec:authorize="isAnonymous()" class="nav-item"><a class="nav-link" th:href="@{/MainPage/User/new}">회원가입</a></li>
+                        <li sec:authorize="isAuthenticated()" class = "nav-item"><a class = "nav-link" th:href="@{/MainPage/Animal/new}">펫 만들기</a></li>
+                        <li sec:authorize="isAuthenticated()" class="nav-item"><a class="nav-link" th:href="@{/MainPage/Post}">자유 게시판</a></li>
+                        <li sec:authorize="isAuthenticated()" class="nav-item"><a class="nav-link" th:href="@{/MainPage/User/Mypage}">마이 페이지</a></li>
+                        <li sec:authorize="isAuthenticated()" class="nav-item"><a class="nav-link" th:href="@{/MainPage/User}">유저 리스트</a></li>
+                        <li sec:authorize="hasRole('ROLE_ADMIN')" class="nav-item"><a class="nav-link" th:href="@{/MainPage/admin/Graph}">관리자 페이지</a></li>             
+                        <li sec:authorize="isAuthenticated()"class="nav-item"><a th:href = "@{/MainPage/User/Mypage}" class="nav-link" sec:authentication="principal.name"></a></li>
+				  	   <form th:action="@{/logout}" method="post" th:hidden="true" name="logoutForm">
+				             <input type="submit"/>
+				        </form>
+				        <li sec:authorize="isAuthenticated()" class="nav-item" id ="logoutLink"><a class="nav-link" th:href="@{/logout}">로그아웃</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>      					
+</body>
+</html>

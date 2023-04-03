@@ -1,0 +1,126 @@
+<html xmlns:th="http://www.thymeleaf.org">
+ 
+<head th:replace="fragments :: page_head('PetTaming-Main')">
+	
+	<script type="text/javascript">
+    </script>
+</head>
+
+
+<body>
+	
+	<div th:replace="navigation :: menu"></div>
+	
+		<header class="mastheader">
+            <div class="container position-relative">
+                <div class="row justify-content-center">
+                    <div class="col-xl-6">
+                        <div class="text-center text-white">
+                            <!-- Page heading-->
+                            <h1 class="mb-5">검색 기능도 사용해보세요!</h1>
+                            <form class="form-subscribe" id="contactForm" data-sb-form-api-token="API_TOKEN">
+                                <div class="row">
+                                    <div class="col">
+                                        <input class="form-control form-control-lg" type="text" placeholder="Search Text" data-sb-validations="required,email" />
+                                    </div>
+                                    <div class="col-auto"><button class="btn btn-primary btn-lg enabled" id="submitButton" type="submit">Search</button></div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+	
+
+     <div class="container mt-5" id = "umyPage">
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Post content-->
+                    <article>
+                        <!-- Post header-->
+                        <header class="mb-4">
+                            <!-- Post title-->
+                            <h1 class="fw-bolder mb-1">"[[${Users.username}]]"님의 [[${pageTitle}]]</h1>
+                            <!-- Post meta content-->
+                            <div class="text-muted fst-italic mb-2"><b>E-mail: [[${Users.email}]]</b></div>           
+                        </header>
+                        <!-- Preview image figure-->
+                        <figure class="mb-4"><img class="img-fluid rounded" th:src="@{${Users.photosImagePath}}" style = "width: 400px;" alt="..." /></figure>
+                    </article>                
+                       
+			       <button><a th:href="@{'/MainPage/Friend/page/1' +  '?sortField=username&sortDir=' + ${sortDir}}" title = "Friend List">Friend List</a></button>
+			       
+	               <button th:if="${Users.user_id == MyAccount.user_id}"><a th:href="@{'/MainPage/User/update/user/' + ${Users.user_id}}" title = "회원 정보 수정">
+					   UPDATE</a></button>
+	             
+	               <button th:if="${Users.user_id == MyAccount.user_id}"><a class = "fa-solid fa-trash fa-2x icon-silver link-delete" title = "회원 탈퇴" th:href="@{'/MainPage/User/delete/user/' + ${Users.user_id}}"
+	               th:userId = "${Users.user_id}">DELETE</a></button>    
+                </div>
+            </div>
+        </div>
+        
+        <div style="float:right;" id = "mypagePet">
+				<div class="card AllAmimalTd" th:each="Animals : ${allAnimals}" style="width: 400px; padding: 20px;">
+					 <div style="position:relative; height: 250px; width: 250px; margin:auto;" 
+					  th:onclick="|location.href='/PetTaming/MainPage/ViweAnimal/${Animals.list_id}'|">
+					  <div style="position:absolute; z-index: 1;" id = "moving">
+						<table>
+						  <tr th:each="action : ${Animals.animalAction.x_axis_line}">
+							<div th:each="actionLine : ${action.x_axis}"
+							th:switch="${actionLine}">
+							
+								<td th:case="color_1"
+								th:class="${Animals.color_1}+_box"
+								style="height: 10px; width: 10px; "></td>
+								
+								<td th:case="color_2"
+								th:class="${Animals.color_2}+_box"
+								style="height: 10px; width: 10px;"></td>
+								
+								<td th:case="color_border"
+								th:class="${Animals.color_border}+_box"
+								style="height: 10px; width: 10px;"></td>
+								
+								<td th:case="*"
+								th:class="${actionLine}+_box"
+								style="height: 10px; width: 10px;"></td>
+							</div>
+						  </tr>
+					  	</table>
+					  </div>
+					  <div style="position:absolute; z-index: 2;" id = "movingtwo">
+						<table class="animal_action">
+						  <tr th:each="action : ${Animals.animalMoveAction.x_axis_line}">
+							<div th:each="actionLine : ${action.x_axis}"
+							th:switch="${actionLine}">
+							
+								<td th:case="color_1"
+								th:class="${Animals.color_1}+_box"
+								style="height: 10px; width: 10px; "></td>
+								
+								<td th:case="color_2"
+								th:class="${Animals.color_2}+_box"
+								style="height: 10px; width: 10px;"></td>
+								
+								<td th:case="color_border"
+								th:class="${Animals.color_border}+_box"
+								style="height: 10px; width: 10px;"></td>
+								
+								<td th:case="*"
+								th:class="${actionLine}+_box"
+								style="height: 10px; width: 10px;"></td>
+								
+							</div>
+						  </tr>
+					  	</table>
+					  </div>
+					  </div>
+					  <p style="margin-top: 5px;" class="badge bg-secondary text-decoration-none link-light" id = "nametext">이름 : [[${Animals.animal_name}]]</p>
+					  <p class="badge bg-secondary text-decoration-none link-light" id = "ownertext" >주인 : [[${Animals.user_id.username}]]</p>	  					  
+				   </div> 
+		        </div>
+		        <div th:replace="fragments :: footer"></div> 
+	
+</body>
+</html>

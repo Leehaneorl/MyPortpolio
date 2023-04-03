@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">	
+	<head th:text-align = "center" th:replace="fragments :: page_head('PetTaming-Main')">		
+		<script type="text/javascript" th:src="@{/js/common.js}"></script>
+		<link rel="stylesheet" type="text/css" th:href="@{/fontawesome/all.css}" />		
+	</head>
+<body>		   
+	  <div th:replace="navigation :: menu"></div>
+		<header class="mastheader">
+            <div class="container position-relative">
+                <div class="row justify-content-center">
+                    <div class="col-xl-6">
+                        <div class="text-center text-white">
+                            <!-- Page heading-->
+                            <h1 class="mb-5">검색 기능도 사용해보세요!</h1>
+                            <form th:action="@{/MainPage/Post/page/1}" class="form-subscribe" id="contactForm" data-sb-form-api-token="API_TOKEN">
+				             <input type="hidden" name="SortFields" th:value="${SortFields}" class="form-control" />
+		                     <input type="hidden" name="SortDirs" th:value="${SortDirs}" class="form-control" />  
+                                <div class="row">
+                                    <div class="col">
+                                        <input class="form-control form-control-lg" name="Keywords" th:value="${Keywords}" type="search" placeholder="Search Text" data-sb-validations="required,email" />
+                                    </div>
+                                    <div class="col-auto">
+										<button class="btn btn-primary btn-lg enabled" id="submitButton" type="submit">
+											<i class="fas fa-search">Search</i>
+										</button>
+										
+										&nbsp;
+										<button class="btn btn-primary btn-lg enabled" id="submitButton" type="button" onclick="clearFilters()">
+											<i class="fas fa-eraser">Clear</i>
+										</button>
+									</div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+      <br>    
+	     <div style = "text-align: center; font-size: 40px;">
+			 <p><b> 자유 게시판 </b></p>
+			 <button class = "crepost"><a th:href="@{/MainPage/Post/new}" id = "myhref">게시글 작성</a></button>			 
+	     </div>     
+      </br>  
+        <table class="table table-bordered table-striped table-hover table-responsive-xl">
+           <thead class="thead-dark">
+            <tr>
+              <th scope="col" style="width: 10%">No
+				    <a th:if = "${SortFields != 'post_id'}" class = "text-white"
+				  th:href = "@{'/MainPage/Post/page/' + ${current} +  '?SortFields=post_id&SortDirs=' + ${SortDirs}}">No</a>
+				  <a th:if = "${SortFields == 'post_id'}" class = "text-white"
+				  th:href = "@{'/MainPage/Post/page/' + ${current} +  '?SortFields=post_id&SortDirs=' + ${ReversesortDirs}}">No</a>
+				  <span th:if = "${SortFields == 'post_id'}" th:class = "${SortDirs == 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'}"
+				           th:utext = "${SortDirs == 'desc' ? '<sub>▼</sub>' : '<sub>▼</sub>'}">					  
+				  </span>
+			  </th>
+              <th scope="col" style="width: 10%;">제목
+				 <a th:if = "${SortFields != 'title'}" class = "text-white"
+				  th:href = "@{'/MainPage/Post/page/' + ${current} +  '?SortFields=title&SortDirs=' + ${SortDirs}}">제목</a>
+				  <a th:if = "${SortFields == 'title'}" class = "text-white"
+				  th:href = "@{'/MainPage/Post/page/' + ${current} +  '?SortFields=title&SortDirs=' + ${ReversesortDirs}}">제목</a>
+				  <span th:if = "${SortFields == 'email'}" th:class = "${SortDirs == 'desc' ? 'fas fa-sort-up' : 'fas fa-sort-down'}"
+				        th:utext = "${SortDirs == 'desc' ? '<sub>▼</sub>' : '<sub>▼</sub>'}">						  
+				  </span>		
+			  </th>
+              <th scope="col" style="width: 10%">작성자
+			  </th>
+              <th scope="col" style="width: 15%">등록일</th>
+              <th scope="col" style="width: 15%">수정일</th>
+              <th scope="col" style="width: 15%">조회수</th>        
+             </tr>
+           </thead>
+  
+           <tbody>
+           <tr th:each="Postlist : ${Postlist}">
+             <td th:text="${Postlist.post_id}"></td>
+             <td><a th:href = "@{'/MainPage/Post/get/' + ${Postlist.post_id}}" id = "myhref">[[${Postlist.title}]]</a></td>
+             <td th:text="${Postlist.user_id.username}"></td>
+             <td th:text="${Postlist.createDate}"></td>
+             <td th:text="${Postlist.modifiedDate}"></td>
+             <td th:text="${Postlist.view}"></td>
+          </tr>
+          </tbody> 
+        </table>            
+	 <nav>
+		<ul class = "pagenation justify-content-center" id = "userpage">
+			<li th:class = "${current != 1 ? 'page-Item active' : 'page-item'}">
+				<a class = "page-link" th:href = "@{/MainPage/Post/page/1?(SortFields=${SortFields}, SortDirs=${SortDirs}, Keyword=${Keywords})}">&raquo;First</a>
+			</li>
+			<li th:class = "${current > 1 ? 'page-Item' : 'page-item disabled'}">
+				<a class = "page-link" th:href = "@{'/MainPage/Post/page/' + ${current-1}(SortFields=${SortFields}, SortDirs=${SortDirs}, Keyword=${Keywords})}">Previous</a>
+			</li>
+			<li th:class = "${current != i ? 'page-Item' : 'page-item active'}"
+			     th:each = "i : ${#numbers.sequence(1,total)}">
+				<a class = "page-link" th:href = "@{'/MainPage/Post/page/' + ${i}(SortFields=${SortFields}, SortDirs=${SortDirs}, Keyword=${keywords})}">[[${i}]]</a>
+			</li>
+			<li th:class = "${current < total ? 'page-Item' : 'page-item disabled'}">
+				<a class = "page-link" th:href = "@{'/MainPage/Post/page/' + ${current+1}(SortFields=${SortFields}, SortDirs=${SortDirs}, Keyword=${Keywords})}">Next</a>
+			</li>
+			<li th:class = "${current != total ? 'page-Item active' : 'page-item'}">
+				<a class = "page-link" th:href = "@{'/MainPage/Post/page/' + ${total}(SortFields=${SortFields}, SortDirs=${SortDirs}, Keyword=${Keywords})}">Last&laquo;</a>
+			</li>
+		</ul>
+	</nav>
+	   <br></br>
+		<div class = "text-center m-1" th:if = "${Item} > 0">
+			<span>Showing posts # [[${start}]] to [[${end}]] of [[${Item}]]</span>
+		</div>
+		<div class = "text-center m-1" th:unless = "${total > 0}">
+			<span>No users found</span>
+		</div>
+		
+	<div th:replace="fragments :: footer"></div>
+		
+		     <div class="modal fade text-center" id="modalDialog">
+               <div class="modal-dialog">
+				 <div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title" id="modalTitle">Warning</h4>
+						 <button type="button" class="close" data-dismiss="moadl">&times;</button>
+					</div>
+						<div class="modal-body">
+							<span id="modalBody"></span>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+							</div>
+						</div>
+					</div>
+				</div>		
+  		
+ <script type = "text/javascript">
+	
+	$(document).ready(function(){
+		$(".link-delete").on("click",function(e){
+			e.preventDefault();
+			link = $(this);
+			userId = link.attr("userId");
+			$("#yesButton").attr("href",link.attr("href"));
+			$("#confirmText").text("해당 " + userId + "를 정말 삭제하시겠습니까?" );
+			$("#confirmModal").modal();
+		});
+	});	
+</script>				
+        <script th:src="@{https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js}"></script>
+        <script th:src="@{/js/scripts.js}"></script>					
+   </body>
+</html>

@@ -1,0 +1,34 @@
+$(document).ready(function() {
+
+	$("#logoutLink").on("click", function(e) {
+		e.preventDefault();
+		document.logoutForm.submit();
+	});
+});	
+
+$(document).ready(function(){
+	$("#buttonCancle").on("click",function(){ 
+	   location.href = "/PetTaming/MainPage/home";
+	   window.location = "/PetTaming/MainPage/home";
+}); 
+
+setInterval(function() {
+	$('.animal_action').fadeToggle()}, 1000);
+
+$('#button').click(function(){
+	
+	alert("javascript start");
+	
+	$('.animal_action').fadeToggle();
+});
+
+function clearFilter(){
+		//location.href = "[[@{/users}]]";
+		window.location = "/PetTaming/MainPage/User";
+}
+
+function clearFilters(){
+		//location.href = "[[@{/users}]]";
+		window.location = "/PetTaming/MainPage/Post";
+}		
+	

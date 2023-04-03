@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head th:text-align = "center" th:replace="fragments :: page_head('PetTaming-Main')">
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>Create and Start Pet Taming</title>
+        <link th:href="@{https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css}" rel="stylesheet" />
+        <link th:href="@{https://fonts.googleapis.com/css?family=Merriweather+Sans:400,700}" rel="stylesheet" />
+        <link th:href="@{https://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic}" rel="stylesheet" type="text/css" />
+        <link th:href="@{https://cdnjs.cloudflare.com/ajax/libs/SimpleLightbox/2.1.0/simpleLightbox.min.css}" rel="stylesheet" />
+        <link th:href="@{/css/style.css}" rel="stylesheet" />        
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
+        <link rel="stylesheet" type="text/css" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
+        <script type="text/javascript" th:src="@{/webjars/jquery/jquery.min.js}"></script>
+        <script type="text/javascript" th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+    </head>
+       <body id="page-top">
+		
+		   <div th:replace="navigation :: menu"></div>	 
+        <!-- Navigation-->
+        <!-- Masthead-->
+        <header class="masthead">
+            <div class="container px-4 px-lg-5 h-100">
+                <div class="row gx-4 gx-lg-5 h-100 align-items-center justify-content-center text-center">
+                    <div class="col-lg-8 align-self-end">
+                        <h1 class="text-white font-weight-bold">주요 기능</h1>
+                        <hr class="divider" />
+                    </div>
+                    <div class="col-lg-8 align-self-baseline">
+                        <p class="text-white-75 mb-5">서로의 펫을 공유하고 상태를 살펴 볼 수 있습니다!</p>
+                        <a class="btn btn-primary btn-xl" th:href="@{/MainPage/Main}">메인으로</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- About-->
+        <section class="page-section bg-primary" id="about">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-lg-8 text-center">
+                        <h2 class="text-white mt-0">나만의 펫을 만들어 키워보아요!</h2>
+                        <hr class="divider divider-light" />
+                        <p class="text-white-75 mb-4">펫을 만들기 위해서는 회원 가입이 필요합니다.</p>
+                        <a class="btn btn-light btn-xl" th:href="@{/MainPage/User/new}">회원 가입</a>
+                    </div>
+                </div>             
+            </div>
+        </section>
+        <!-- Services-->
+        <section class="page-section" id="services">
+            <div class="container px-4 px-lg-5">
+                <h2 class="text-center mt-0">펫 키우기 주요 서비스</h2>
+                <hr class="divider" />
+                <div class="row gx-4 gx-lg-5">
+                    <div class="col-lg-3 col-md-6 text-center">
+                        <div class="mt-5">
+                            <div class="mb-2"><i class="bi-gem fs-1 text-primary"></i></div>
+                            <h3 class="h4 mb-2">시간별로 변경되는 나만의 펫 상태</h3>
+                            <p class="text-muted mb-0">기쁨, 슬픔, 배고픔 등 다양한 감정을 펫이 느끼고 있어요!</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 text-center">
+                        <div class="mt-5">
+                            <div class="mb-2"><i class="bi-laptop fs-1 text-primary"></i></div>
+                            <h3 class="h4 mb-2">서로의 동물 공유</h3>
+                            <p class="text-muted mb-0">유저들의 펫을 같이 보살펴 주어봐요!</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 text-center">
+                        <div class="mt-5">
+                            <div class="mb-2"><i class="bi-globe fs-1 text-primary"></i></div>
+                            <h3 class="h4 mb-2"> 자유 게시판</h3>
+                            <p class="text-muted mb-0"> 도움이 필요한 펫이나 이쁜 펫등 게시판에 공유해보아요!</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 text-center">
+                        <div class="mt-5">
+                            <div class="mb-2"><i class="bi-heart fs-1 text-primary"></i></div>
+                            <h3 class="h4 mb-2">친구 추가된 유저와 함께 돌보기</h3>
+                            <p class="text-muted mb-0">친구의 펫을 돌봐주거나 친구로 추가된 유저는 나의 펫을 돌봐줄 수 있어요!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Portfolio-->
+        <div id="portfolio">
+            <div class="container-fluid p-0">
+                <div class="row g-0">
+                    <div class="col-lg-4 col-sm-6">
+                        <a class="portfolio-box" th:href="@{/assets/img/portfolio/fullsize/home1.png}" title="Pet Taming">
+                            <img class="img-fluid" th:src="@{/assets/img/portfolio/thumbnails/home1.png}" alt="..." />
+                            <div class="portfolio-box-caption">
+                                <div class="project-category text-white-50">펫 키우기 튜토리얼 </div>
+                                <div>메인 페이지</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-4 col-sm-6">
+                        <a class="portfolio-box" th:href="@{/assets/img/portfolio/fullsize/home2.png}" title="Pet Taming">
+                            <img class="img-fluid" th:src="@{/assets/img/portfolio/thumbnails/home2.png}" alt="..." />
+                            <div class="portfolio-box-caption">
+                                <div class="project-category text-white-50">펫 키우기 튜토리얼</div>
+                                <div>메인 페이지</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-4 col-sm-6">
+                        <a class="portfolio-box" th:href="@{/assets/img/portfolio/fullsize/home3.png}" title="Pet Taming">
+                            <img class="img-fluid" th:src="@{/assets/img/portfolio/thumbnails/home3.png}" alt="..." />
+                            <div class="portfolio-box-caption">
+                                <div class="project-category text-white-50">펫 키우기 튜토리얼</div>
+                                <div>메인 페이지</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-4 col-sm-6">
+                        <a class="portfolio-box" th:href="@{/assets/img/portfolio/fullsize/home4.png}" title="Pet Taming">
+                            <img class="img-fluid" th:src="@{/assets/img/portfolio/thumbnails/home4.png}" alt="..." />
+                            <div class="portfolio-box-caption">
+                                <div class="project-category text-white-50">펫 키우기 튜토리얼</div>
+                                <div>메인 페이지</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-4 col-sm-6">
+                        <a class="portfolio-box" th:href="@{/assets/img/portfolio/fullsize/home5.png}" title="Pet Taming">
+                            <img class="img-fluid" th:src="@{/assets/img/portfolio/thumbnails/home5.png}" alt="..." />
+                            <div class="portfolio-box-caption">
+                                <div class="project-category text-white-50">펫 키우기 튜토리얼</div>
+                                <div>메인 페이지</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-4 col-sm-6">
+                        <a class="portfolio-box" th:href="@{/assets/img/portfolio/fullsize/home6.png}" title="Pet Taming">
+                            <img class="img-fluid" th:src="@{/assets/img/portfolio/thumbnails/home6.png}" alt="..." />
+                            <div class="portfolio-box-caption">
+                                <div class="project-category text-white-50">펫 키우기 튜토리얼</div>
+                                <div>메인 페이지</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Footer-->
+	  	<div th:replace="fragments :: footer"></div>
+	  
+        <!-- Bootstrap core JS-->
+        <script th:src="@{https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js}"></script>
+        <!-- SimpleLightbox plugin JS-->
+        <script th:src="@{https://cdnjs.cloudflare.com/ajax/libs/SimpleLightbox/2.1.0/simpleLightbox.min.js}"></script>
+        <!-- Core theme JS-->
+        <script th:src="@{/js/scripts.js}"></script>
+
+        <script th:src="@{https://cdn.startbootstrap.com/sb-forms-latest.js}"></script>
+    </body>
+</html>
